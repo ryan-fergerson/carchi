@@ -27,18 +27,26 @@ func GetDatabase() (*sql.DB, error) {
 	return db, nil
 }
 
-func CreateConversationTransaction(e error, db *sql.DB) (*sql.Tx, *sql.Stmt, *sql.Stmt, *sql.Stmt) {
+func CreateConversationTransaction(db *sql.DB) (*sql.Tx, *sql.Stmt, *sql.Stmt, *sql.Stmt, error) {
 	t, e := db.Begin()
-	handleError(e)
+	if e != nil {
+		return nil, nil, nil, nil, e
+	}
 
 	cStatement, e := t.Prepare(conversationsInsertSql)
-	handleError(e)
+	if e != nil {
+		return nil, nil, nil, nil, e
+	}
 
 	nStatement, e := t.Prepare(nodesInsertSql)
-	handleError(e)
+	if e != nil {
+		return nil, nil, nil, nil, e
+	}
 
 	mStatement, e := t.Prepare(messagesInsertSql)
-	handleError(e)
+	if e != nil {
+		return nil, nil, nil, nil, e
+	}
 
-	return t, cStatement, nStatement, mStatement
+	return t, cStatement, nStatement, mStatement, nil
 }

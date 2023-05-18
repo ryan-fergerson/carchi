@@ -17,7 +17,7 @@ func ReadZipFile(args []string) (*zip.ReadCloser, error) {
 	return zip.OpenReader(zipFilePath)
 }
 
-func ParseConversations(r *zip.ReadCloser) []Conversation {
+func ParseConversations(r *zip.ReadCloser) ([]Conversation, error) {
 	var conversations []Conversation
 
 	for _, f := range r.File {
@@ -42,10 +42,11 @@ func ParseConversations(r *zip.ReadCloser) []Conversation {
 				return nil
 			}()
 
-			handleError(err)
-			break
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
-	return conversations
+	return conversations, nil
 }

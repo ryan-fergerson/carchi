@@ -2,34 +2,51 @@ package main
 
 import (
 	"encoding/json"
-	"log"
+	"errors"
+	"fmt"
 	"os"
 	"time"
 
 	_ "github.com/lib/pq"
 )
 
-func handleError(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
 func main() {
 	f, err := ReadZipFile(os.Args)
-	handleError(err)
+
+	if err != nil {
+		handleError(&ApplicationError{"reading zip file", err})
+	}
+
 	defer f.Close()
 
-	conversations := ParseConversations(f)
+	conversations, err := ParseConversations(f)
+
+	if err != nil {
+		handleError(&ApplicationError{"parsing conversations", err})
+	}
 
 	db, err := GetDatabase()
-	handleError(err)
+
+	if err != nil {
+		handleError(&ApplicationError{"getting database", err})
+	}
+
 	defer db.Close()
 
-	transaction, conversationStatement, nodeStatement, messageStatement := CreateConversationTransaction(err, db)
+	transaction, conversationStatement, nodeStatement, messageStatement, err := CreateConversationTransaction(db)
+
+	if err != nil {
+		handleError(&ApplicationError{"creating conversation transaction", err})
+	}
+
 	importTime := time.Now().Unix()
 
 	for _, c := range conversations {
+		if c.Id == "" {
+			handleError(&ApplicationError{"creating conversation statement",
+				errors.New("conversation id is required " + fmt.Sprintf("\n%+v\n", c))})
+		}
+
 		_, err = conversationStatement.Exec(
 			c.Id,
 			c.Title,
@@ -38,11 +55,22 @@ func main() {
 			c.UpdateTime,
 			c.CurrentNode,
 		)
-		handleError(err)
+
+		if err != nil {
+			handleError(&ApplicationError{"executing conversation statement", err})
+		}
 
 		for nodeId, node := range c.Mapping {
+			if nodeId == "" {
+				handleError(&ApplicationError{"creating node statement",
+					errors.New("node id is required " + fmt.Sprintf("\n%+v\n", node))})
+			}
+
 			childrenJson, err := json.Marshal(node.Children)
-			handleError(err)
+
+			if err != nil {
+				handleError(&ApplicationError{"marshalling children json", err})
+			}
 
 			_, err = nodeStatement.Exec(
 				nodeId,
@@ -51,11 +79,22 @@ func main() {
 				importTime,
 				childrenJson,
 			)
-			handleError(err)
+
+			if err != nil {
+				handleError(&ApplicationError{"executing node statement", err})
+			}
 
 			if node.Message != nil {
+				if node.Message.Id == "" {
+					handleError(&ApplicationError{"creating node statement",
+						errors.New("message id is required " + fmt.Sprintf("\n%+v\n", node))})
+				}
+
 				partsJson, err := json.Marshal(node.Message.Content.Parts)
-				handleError(err)
+
+				if err != nil {
+					handleError(&ApplicationError{"marshalling parts json", err})
+				}
 
 				_, err = messageStatement.Exec(
 					node.Message.Id,
@@ -71,10 +110,17 @@ func main() {
 					node.Message.Weight,
 					node.Message.Recipient,
 				)
-				handleError(err)
+
+				if err != nil {
+					handleError(&ApplicationError{"executing message statement", err})
+				}
 			}
 		}
 	}
 
-	handleError(transaction.Commit())
+	err = transaction.Commit()
+
+	if err != nil {
+		handleError(&ApplicationError{"committing transaction", err})
+	}
 }

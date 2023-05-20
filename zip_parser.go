@@ -7,14 +7,20 @@ import (
 	"log"
 )
 
-func ReadZipFile(args []string) (*zip.ReadCloser, error) {
+func ReadDataExportFile(args []string) ([]Conversation, error) {
 	if len(args) < 2 {
 		log.Fatal("You must provide a zip file as an argument.")
 	}
 
 	zipFilePath := args[1]
 
-	return zip.OpenReader(zipFilePath)
+	r, err := zip.OpenReader(zipFilePath)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return ParseConversations(r)
 }
 
 func ParseConversations(r *zip.ReadCloser) ([]Conversation, error) {

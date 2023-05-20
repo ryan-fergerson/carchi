@@ -74,4 +74,3 @@ BEGIN
   ORDER BY rank DESC;
 END;
 $$ LANGUAGE plpgsql;
-

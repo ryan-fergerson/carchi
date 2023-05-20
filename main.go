@@ -11,15 +11,7 @@ import (
 )
 
 func main() {
-	f, err := ReadZipFile(os.Args)
-
-	if err != nil {
-		handleError(&ApplicationError{"reading zip file", err})
-	}
-
-	defer f.Close()
-
-	conversations, err := ParseConversations(f)
+	conversations, err := ReadDataExportFile(os.Args)
 
 	if err != nil {
 		handleError(&ApplicationError{"parsing conversations", err})

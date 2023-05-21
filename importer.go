@@ -7,7 +7,13 @@ import (
 	"log"
 )
 
-func ReadDataExportFile(args []string) ([]Conversation, error) {
+type DataImporter struct{}
+
+func NewDataImporter() *DataImporter {
+	return &DataImporter{}
+}
+
+func (di *DataImporter) ImportData(args []string) ([]Conversation, error) {
 	if len(args) < 2 {
 		log.Fatal("You must provide a zip file as an argument.")
 	}
@@ -20,10 +26,10 @@ func ReadDataExportFile(args []string) ([]Conversation, error) {
 		return nil, err
 	}
 
-	return ParseConversations(r)
+	return di.parseConversations(r)
 }
 
-func ParseConversations(r *zip.ReadCloser) ([]Conversation, error) {
+func (di *DataImporter) parseConversations(r *zip.ReadCloser) ([]Conversation, error) {
 	var conversations []Conversation
 
 	for _, f := range r.File {

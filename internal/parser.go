@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"archive/zip"
@@ -14,11 +14,11 @@ func NewDataImporter() *DataImporter {
 }
 
 func (di *DataImporter) ImportData(args []string) ([]Conversation, error) {
-	if len(args) < 2 {
+	if len(args) < 1 {
 		log.Fatal("You must provide a zip file as an argument.")
 	}
 
-	zipFilePath := args[1]
+	zipFilePath := args[0]
 
 	r, err := zip.OpenReader(zipFilePath)
 

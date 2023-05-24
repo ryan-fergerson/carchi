@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"database/sql"
@@ -158,13 +158,13 @@ func (ci *ConversationImporter) storeMessage(messageStatement *sql.Stmt, nodeId 
 		return &ApplicationError{"creating message statement", errors.New("message id is required")}
 	}
 
-	partsJson, err := json.Marshal(message.Content.Parts)
+	partsJson := ""
 
-	if err != nil {
-		return &ApplicationError{"marshalling parts json", err}
+	if len(message.Content.Parts) > 0 {
+		partsJson = message.Content.Parts[0]
 	}
 
-	_, err = messageStatement.Exec(
+	_, err := messageStatement.Exec(
 		message.Id,
 		nodeId,
 		message.Author.Role,
@@ -173,7 +173,7 @@ func (ci *ConversationImporter) storeMessage(messageStatement *sql.Stmt, nodeId 
 		message.CreateTime,
 		message.UpdateTime,
 		message.Content.ContentType,
-		string(partsJson),
+		partsJson,
 		message.EndTurn,
 		message.Weight,
 		message.Recipient,

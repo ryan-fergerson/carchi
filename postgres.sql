@@ -2,24 +2,24 @@
 -- Schema --
 ------------
 CREATE TABLE IF NOT EXISTS conversations (
-    id TEXT PRIMARY KEY,
-    title TEXT,
-    import_time DOUBLE PRECISION,
-    create_time DOUBLE PRECISION,
-    update_time DOUBLE PRECISION,
-    current_node TEXT,
-    plugin_ids TEXT
+  id TEXT PRIMARY KEY,
+  title TEXT,
+  import_time DOUBLE PRECISION,
+  create_time DOUBLE PRECISION,
+  update_time DOUBLE PRECISION,
+  current_node TEXT,
+  plugin_ids TEXT
 );
 
 CREATE TABLE IF NOT EXISTS nodes (
-    id TEXT PRIMARY KEY,
-    conversation_id TEXT REFERENCES conversations(id),
-    parent TEXT,
-    import_time DOUBLE PRECISION,
-    children JSONB
+  id TEXT PRIMARY KEY,
+  conversation_id TEXT REFERENCES conversations(id),
+  parent TEXT,
+  import_time DOUBLE PRECISION,
+  children JSONB
 );
 
-CREATE TABLE messages (
+CREATE TABLE IF NOT EXISTS messages (
   id TEXT PRIMARY KEY,
   node_id TEXT,
   author_role TEXT,
@@ -37,21 +37,10 @@ CREATE TABLE messages (
 ----------------------
 -- Full-text search --
 ----------------------
-ALTER TABLE messages ADD COLUMN parts_tsv tsvector;
+ALTER TABLE messages ADD COLUMN parts_tsv TSVECTOR
+  GENERATED ALWAYS AS (to_tsvector('english', coalesce(parts::TEXT, ''))) STORED;
 
 CREATE INDEX parts_tsv_idx ON messages USING gin(parts_tsv);
-
-CREATE OR REPLACE FUNCTION messages_parts_tsv_trigger() RETURNS trigger AS $$
-BEGIN
-  NEW.parts_tsv := to_tsvector('english', coalesce(NEW.parts::text, ''));
-  RETURN NEW;
-END
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER messages_parts_tsv_update
-BEFORE INSERT OR UPDATE OF parts ON messages
-FOR EACH ROW
-EXECUTE PROCEDURE messages_parts_tsv_trigger();
 ---------------
 -- Functions --
 ---------------

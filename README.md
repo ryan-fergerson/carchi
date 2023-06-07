@@ -1,12 +1,18 @@
 # Carchi, Chat archive
 
-Save your ChatGPT conversations for backup and to do your own personal data analytics.
+Carchi is a tool for saving your ChatGPT conversations for backup and personal data analytics. It also enables you to search through your conversations using PostgreSQL's full-text searching features.
 
-Search through your conversations using PostgreSQL's full-text searching features.
+Carchi operates in two modes: `archive` and `server`.
+
+In `archive` mode, Carchi imports conversation data from a provided ZIP file into a database. The input data is structured in JSON format based on the data export from the ChatGPT web application.
+
+In `server` mode, Carchi starts a web server to provide a user interface for querying and analyzing the saved conversations.
 
 ## Overview
 
-This program imports conversation data from a provided ZIP file into a database. The input data is structured in JSON format based on the data export from the ChatGPT web application.
+In `archive` mode, the program reads the input from a ZIP file provided as a command-line argument. The ZIP file should contain a JSON file named "conversations.json". The input data is parsed into a slice of `Conversation` objects, and these objects are inserted into the database.
+
+In `server` mode, the program starts a web server to provide an interactive user interface. The user can use this interface to query and analyze the saved conversations.
 
 ## Structure of Input Data
 
@@ -23,6 +29,8 @@ The program expects the input data to have a specific structure. Here is the def
 
 ## How the Program Works
 
+When running in `archive` mode:
+
 1. The program starts by reading the input from a ZIP file provided as a command-line argument. The ZIP file should contain a JSON file named "conversations.json".
 
 2. The program then parses the input data into a slice of `Conversation` objects.
@@ -36,6 +44,8 @@ The program expects the input data to have a specific structure. Here is the def
 6. For each `Node` in the `Mapping` field of the `Conversation`, the program executes the node statement to insert a row into the node table. If the `Node` has a `Message`, the program also executes the message statement to insert a row into the message table.
 
 7. Finally, the transaction is committed to the database.
+
+When running in `server` mode, the program starts a web server. The user can use the web interface to search through and analyze the stored conversations.
 
 ## Error Handling
 

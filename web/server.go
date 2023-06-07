@@ -12,10 +12,48 @@ func StartServer() error {
 	r := mux.NewRouter()
 	r.HandleFunc("/", RecentConversationViewHandler).Methods(http.MethodGet)
 	r.HandleFunc("/c/{id}", ConversationViewHandler).Methods(http.MethodGet)
+	r.HandleFunc("/search", SearchViewHandler).Methods(http.MethodGet)
+	r.HandleFunc("/search", SearchViewHandler).Methods(http.MethodPost)
 
 	http.Handle("/", r)
 
 	return http.ListenAndServe(":8080", nil)
+}
+
+func SearchViewHandler(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, "Error processing search request", http.StatusBadRequest)
+		return
+	}
+
+	query := r.FormValue("query")
+
+	s, err := internal.NewConversationBrowserService()
+
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, "Error processing search request", http.StatusBadRequest)
+		return
+	}
+
+	searchResults, err := s.SearchConversations(query)
+
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, "Error processing search request", http.StatusBadRequest)
+		return
+	}
+
+	tmpl := template.Must(template.ParseFiles("web/search.html"))
+	err = tmpl.Execute(w, searchResults)
+
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, "Error processing search request", http.StatusBadRequest)
+		return
+	}
 }
 
 func RecentConversationViewHandler(w http.ResponseWriter, r *http.Request) {

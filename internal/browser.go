@@ -30,6 +30,14 @@ type MessageParts struct {
 	Parts           string `json:"message_parts"`
 }
 
+type SearchResult struct {
+	ConversationId string
+	Title          string
+	Parts          string
+	Rank           float64
+	RowNumber      int64
+}
+
 func NewConversationBrowserService() (*ConversationBrowser, error) {
 	db, err := NewDatabaseService().GetDatabaseHandle()
 
@@ -40,6 +48,50 @@ func NewConversationBrowserService() (*ConversationBrowser, error) {
 	return &ConversationBrowser{
 		DB: db,
 	}, nil
+}
+
+func (cb *ConversationBrowser) SearchConversations(query string) ([]SearchResult, error) {
+	var searchResults []SearchResult
+
+	rows, err := cb.DB.Query(`
+		SELECT
+			conversation_id,
+			headline_title,
+			headline_parts,
+			rank,
+			ROW_NUMBER() OVER (ORDER BY rank DESC)
+		FROM search_conversations($1);
+	`, query)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var sr SearchResult
+
+		err := rows.Scan(
+			&sr.ConversationId,
+			&sr.Title,
+			&sr.Parts,
+			&sr.Rank,
+			&sr.RowNumber,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		searchResults = append(searchResults, sr)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return searchResults, nil
 }
 
 func (cb *ConversationBrowser) GetRecentConversations() ([]RecentConversation, error) {

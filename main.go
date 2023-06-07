@@ -9,10 +9,11 @@ import (
 
 func main() {
 	mode := flag.String("mode", "", "Mode of operation: 'server' or 'archive'")
+
 	flag.Parse()
 
 	if *mode == "" {
-		internal.HandleError(&internal.ApplicationError{"main", errors.New("mode argument is required")})
+		internal.HandleError(&internal.ApplicationError{Action: "checking mode argument", Err: errors.New("mode argument is required")})
 	}
 
 	switch *mode {
@@ -20,7 +21,7 @@ func main() {
 		s, e := internal.NewArchiveService()
 
 		if e != nil {
-			internal.HandleError(&internal.ApplicationError{"setting up archive service", e})
+			internal.HandleError(&internal.ApplicationError{Action: "setting up archive service", Err: e})
 		}
 
 		e = s.ArchiveConversations(flag.Args())
@@ -28,9 +29,9 @@ func main() {
 		e := web.StartServer()
 
 		if e != nil {
-			internal.HandleError(&internal.ApplicationError{"starting web server", e})
+			internal.HandleError(&internal.ApplicationError{Action: "starting web server", Err: e})
 		}
 	default:
-		internal.HandleError(&internal.ApplicationError{"main", errors.New("invalid mode")})
+		internal.HandleError(&internal.ApplicationError{Action: "starting application", Err: errors.New("invalid mode")})
 	}
 }

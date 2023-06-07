@@ -46,20 +46,29 @@ CREATE INDEX parts_tsv_idx ON messages USING gin(parts_tsv);
 ---------------
 CREATE OR REPLACE FUNCTION search_conversations(query TEXT)
 RETURNS TABLE (
-  title TEXT,
-  parts TEXT,
+  conversation_id TEXT,
+  headline_title TEXT,
+  headline_parts TEXT,
   rank REAL
 ) AS $$
+DECLARE
+  max_fragments       INT       := 10;
+  min_words           INT       := 10;
+  max_words           INT       := 25;
+  ts_config           REGCONFIG := 'english';
+  ts_headline_options TEXT      := format('MaxFragments=%s, MinWords=%s, MaxWords=%s', max_fragments, min_words, max_words);
+  search_query        TSQUERY   := websearch_to_tsquery(ts_config, query);
 BEGIN
   RETURN QUERY
   SELECT
-    c.title,
-    m.parts,
-    ts_rank(to_tsvector('english', c.title || ' ' || m.parts), to_tsquery('english', query)) AS rank
+    c.id conversation_id,
+    ts_headline(ts_config, c.title, search_query, ts_headline_options),
+    ts_headline(ts_config, m.parts, search_query, ts_headline_options),
+    ts_rank(m.parts_tsv, search_query) AS rank
   FROM messages m
   JOIN nodes n ON m.node_id = n.id
   JOIN conversations c ON n.conversation_id = c.id
-  WHERE to_tsvector('english', c.title || ' ' || m.parts) @@ to_tsquery('english', query)
+  WHERE m.parts_tsv @@ search_query
   ORDER BY rank DESC;
-END;
+END
 $$ LANGUAGE plpgsql;

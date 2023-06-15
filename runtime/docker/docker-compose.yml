@@ -1,0 +1,34 @@
+version: "3.7"
+services:
+  app:
+    container_name: carchi_app
+    build:
+      context: ../..
+      dockerfile: ./runtime/docker/Dockerfile
+    ports:
+      - "5555:8080"
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_NAME: carchi
+      DB_USER: carchi_admin
+      DB_PASSWORD: carchi_secret
+      DB_PORT: 5432
+
+  db:
+    container_name: carchi_db
+    image: postgres:15.3
+    restart: always
+    ports:
+      - "5556:5432"
+    environment:
+      POSTGRES_DB: carchi
+      POSTGRES_USER: carchi_admin
+      POSTGRES_PASSWORD: carchi_secret
+    volumes:
+      - carchi_data:/var/lib/postgresql/data/
+      - ../../postgres.sql:/docker-entrypoint-initdb.d/postgres.sql:ro
+
+volumes:
+  carchi_data:
